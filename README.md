@@ -16,15 +16,15 @@ This project combines a machine learning model for disease prediction with a Gem
 
 ## 🗂️ Project Structure
 ├── streamlit_app.py              # Main Streamlit app
-|
+
 ├── decision_tree.joblib          # Trained ML model
-|
+
 ├── training_data.csv             # Training dataset
-|
+
 ├── test_data.csv                 # Test dataset
-|
+
 ├── dis_info.xlsx                 # Disease info file
-|
+
 ├── static/                       # Contains disease images
-|
+
 ├── requirements.txt              # Python dependencies
