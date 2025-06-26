@@ -40,18 +40,17 @@ This project combines a machine learning model for disease prediction with a Gem
 
 
 If you’re using VS Code with Docker:
-	- 	Open project in VS Code.
-	- 	Press F1 → Dev Containers: Reopen in Container.
-	- 	The container will build and install dependencies automatically.
-  	- 	The web page is hosted automatically.
+- 	Open project in VS Code.
+- 	Press F1 → Dev Containers: Reopen in Container.
+- 	The container will build and install dependencies automatically.
+- 	The web page is hosted automatically.
 
 ## 🔑 Gemini API Key Setup
 
 The Gemini chatbot uses the Google Generative AI API.
-	- 	Open streamlit_app.py
- 	- 	Generate the API : https://aistudio.google.com/app/apikey
-	- 	Replace the placeholder key:
-     GEMINI_API_KEY = "YOUR_KEY_HERE"
+- 	Open streamlit_app.py
+- 	Generate the API KEY here : https://aistudio.google.com/app/apikey
+- 	Replace the placeholder key: GEMINI_API_KEY = "YOUR_KEY_HERE"
 	
 
 ## ✨ Credits
