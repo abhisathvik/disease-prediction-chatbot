@@ -6,7 +6,7 @@ import os
 import google.generativeai as genai
 
 # Gemini API Key (FOR DEVELOPMENT ONLY)
-GEMINI_API_KEY = "AIzaSyC9qikPx3_7sgqYSps49T9Iy9XpwVBW3io"
+GEMINI_API_KEY = "" #Your Gemini API key
 
 # Initialize Gemini once using session_state
 def initialize_gemini():
