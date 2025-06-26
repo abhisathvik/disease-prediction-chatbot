@@ -1,4 +1,4 @@
-### 🧠 Disease Predictor and AI Health Chatbot
+# 🧠 Disease Predictor and AI Health Chatbot
 
 This project combines a machine learning model for disease prediction with a Gemini-powered AI chatbot for general health advice. It features an interactive Streamlit-based frontend and is containerized using Docker for consistent development environments.
 
@@ -30,7 +30,7 @@ This project combines a machine learning model for disease prediction with a Gem
 ├── requirements.txt              # Python dependencies
 
 
-# Run the project
+## Run the project
 
 - The project is already intialised with the Docker-based dev setup files.
 
@@ -45,7 +45,7 @@ If you’re using VS Code with Docker:
 	3.	The container will build and install dependencies automatically.
   4.  The web page is hosted automatically.
 
-# 🔑 Gemini API Key Setup
+## 🔑 Gemini API Key Setup
 
 The Gemini chatbot uses the Google Generative AI API.
 	•	Open streamlit_app.py
@@ -53,13 +53,13 @@ The Gemini chatbot uses the Google Generative AI API.
      GEMINI_API_KEY = "YOUR_KEY_HERE"
 
 
-# ✨ Credits
+## ✨ Credits
 	
   •	Disease data adapted from public health sources.
 	•	Gemini API via Google Generative AI
 	•	Streamlit UI and deployment
 
-# ✨ Contact
+## ✨ Contact
 Built by Abhi Sathvik Reddy
 
 GitHub: @abhisathvik
