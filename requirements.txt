@@ -32,14 +32,14 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 referencing==0.34.0
 requests==2.32.3
-rich==14.1.0
+rich==13.7.1   # ✅ compatible with streamlit 1.38.0
 rpds-py>=0.20.0
 scikit-learn==1.5.1
 scipy==1.14.1
 six==1.16.0
 sklearn-pandas==2.2.0
 smmap==5.0.1
-streamlit==1.32.2
+streamlit==1.38.0
 streamlit-chat==0.1.1
 tenacity==8.2.3
 threadpoolctl==3.5.0
@@ -53,6 +53,6 @@ watchdog==4.0.2
 Werkzeug==3.0.3
 google-generativeai==0.8.5
 
-# Build helpers (fix distutils/pip issues)
+# Build helpers
 setuptools>=65.5.0
 wheel
