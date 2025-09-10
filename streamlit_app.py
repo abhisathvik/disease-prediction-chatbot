@@ -6,7 +6,7 @@ import os
 import google.generativeai as genai
 
 # Gemini API Key (FOR DEVELOPMENT ONLY)
-GEMINI_API_KEY = "" #Your Gemini API key
+GEMINI_API_KEY = "AIzaSyDirUoPYuqmQJM63bjPhW9_Eh8-WLAjoz4" #Your Gemini API key
 
 # Initialize Gemini once using session_state
 def initialize_gemini():
@@ -95,14 +95,11 @@ def main():
                     d[s] = 1
                 new_data = pd.DataFrame([d])
                 probs = model.predict_proba(new_data)[0]
-                top3 = probs.argsort()[-3:][::-1]
-                return [(model.classes_[i], probs[i]) for i in top3]
+                top1 = probs.argmax()
+                return [(model.classes_[top1], probs[top1])]
 
             predictions = predict_disease(selected_symptoms)
             for disease, prob in predictions:
-                img_path = f"static/{disease}.jpg".replace(" ", "")
-                if os.path.exists(img_path):
-                    st.image(img_path, caption=f"{disease} ({prob*100:.2f}%)", use_column_width=True)
                 st.subheader(disease)
                 st.write(disease_about.get(disease, "Information not available."))
 
