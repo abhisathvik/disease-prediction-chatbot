@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { motion } from 'framer-motion'
@@ -12,7 +12,7 @@ import {
   Clock, 
   Star, 
   AlertCircle,
-  Map
+  ExternalLink
 } from 'lucide-react'
 
 // Define types for our data
@@ -26,19 +26,6 @@ interface Doctor {
   phone: string
   hours: string
   acceptingPatients: boolean
-  coordinates?: {
-    lat: number,
-    lng: number
-  }
-}
-
-// Define types for Google Maps (only needed for type checking)
-declare global {
-  interface Window {
-    initMap?: () => void
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const google: any
 }
 
 export default function DoctorsPage() {
@@ -51,10 +38,6 @@ export default function DoctorsPage() {
   const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null)
   const [locationError, setLocationError] = useState<string>('')
   const [loadingLocation, setLoadingLocation] = useState(true)
-  const [showMap, setShowMap] = useState(false)
-  
-  // Ref for the map container
-  const mapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -63,7 +46,7 @@ export default function DoctorsPage() {
   }, [user, isLoading, router])
 
   useEffect(() => {
-    // Get user's location - MANDATORY requirement
+    // Get user's location for nearby hospitals search
     if (navigator.geolocation) {
       setLoadingLocation(true)
       navigator.geolocation.getCurrentPosition(
@@ -149,8 +132,7 @@ export default function DoctorsPage() {
         
         return {
           ...doctor,
-          distance: `${distance.toFixed(1)} mi`,
-          coordinates: { lat: doctorLat, lng: doctorLng }
+          distance: `${distance.toFixed(1)} mi`
         }
       })
       
@@ -188,11 +170,36 @@ export default function DoctorsPage() {
           await fetchNearbyDoctors(latitude, longitude)
           setLoadingLocation(false)
         },
-        (error) => {
+        () => {
           setLocationError('Location access still denied')
           setLoadingLocation(false)
         }
       )
+    }
+  }
+
+  // Function to open external maps with nearby hospitals search
+  const openNearbyHospitalsInMaps = () => {
+    if (coordinates) {
+      // Construct search query for nearby hospitals
+      const searchQuery = `hospitals near ${coordinates.lat},${coordinates.lng}`
+      
+      // Try different map applications based on user agent
+      const userAgent = navigator.userAgent
+      
+      if (/iPhone|iPad|iPod/.test(userAgent)) {
+        // iOS - Open Apple Maps
+        window.open(`http://maps.apple.com/?q=${encodeURIComponent(searchQuery)}`, '_blank')
+      } else if (/Android/.test(userAgent)) {
+        // Android - Open Google Maps
+        window.open(`https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`, '_blank')
+      } else {
+        // Desktop - Open Google Maps
+        window.open(`https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`, '_blank')
+      }
+    } else {
+      // Fallback - general hospital search
+      window.open('https://www.google.com/maps/search/hospitals+near+me', '_blank')
     }
   }
 
@@ -202,60 +209,6 @@ export default function DoctorsPage() {
     const matchesSpecialty = selectedSpecialty === 'all' || doctor.specialty === selectedSpecialty
     return matchesSearch && matchesSpecialty
   })
-
-  // Load Google Maps script
-  useEffect(() => {
-    // Check if we have what we need to load the map
-    if (showMap && coordinates && !document.getElementById('google-maps-script')) {
-      const script = document.createElement('script')
-      script.id = 'google-maps-script'
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&callback=initMap`
-      script.async = true
-      // For older browsers that don't support defer
-      if (script.defer !== undefined) {
-        script.defer = true
-      }
-      
-      // Create a global callback function
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).initMap = () => {
-        if (mapRef.current) {
-          const map = new google.maps.Map(mapRef.current, {
-            center: { lat: coordinates.lat, lng: coordinates.lng },
-            zoom: 14,
-            mapTypeId: 'roadmap'
-          })
-
-          // Add markers for doctors
-          if (doctors && doctors.length > 0) {
-            doctors.forEach((doctor: Doctor) => {
-              if (doctor.coordinates) {
-                new google.maps.Marker({
-                  position: { lat: doctor.coordinates.lat, lng: doctor.coordinates.lng },
-                  map: map,
-                  title: doctor.name
-                })
-              }
-            })
-          }
-        }
-      }
-      
-      document.head.appendChild(script)
-    }
-    
-    // Cleanup function to remove script when component unmounts or dependencies change
-    return () => {
-      const existingScript = document.getElementById('google-maps-script')
-      if (existingScript) {
-        existingScript.remove()
-      }
-      // Remove the global callback to prevent memory leaks
-      if ('initMap' in window) {
-        delete window.initMap
-      }
-    }
-  }, [showMap, coordinates, doctors])
 
   if (isLoading) {
     return (
@@ -283,7 +236,7 @@ export default function DoctorsPage() {
               <div className="flex items-center">
                 <MapPin className="h-8 w-8 text-indigo-600 mr-3" />
                 <div>
-                  <h1 className="text-lg font-semibold text-gray-900">Find Doctors</h1>
+                  <h1 className="text-lg font-semibold text-gray-900">Find Doctors & Hospitals</h1>
                   <p className="text-sm text-gray-600">Locate nearby healthcare providers</p>
                 </div>
               </div>
@@ -326,14 +279,19 @@ export default function DoctorsPage() {
                 </div>
               </div>
             )}
+            
+            {/* External Maps Button */}
             <div className="mb-6">
               <button
-                onClick={() => setShowMap(!showMap)}
+                onClick={openNearbyHospitalsInMaps}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition-colors flex items-center justify-center"
               >
-                <Map className="h-5 w-5 mr-2" />
-                {showMap ? 'Hide Map' : 'Show Map'}
+                <ExternalLink className="h-5 w-5 mr-2" />
+                Find Nearby Hospitals in Maps
               </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Opens your device's default maps app to search for nearby hospitals and medical facilities
+              </p>
             </div>
           </div>
           
@@ -372,23 +330,6 @@ export default function DoctorsPage() {
             </div>
           </div>
         </motion.div>
-
-        {/* Map Container */}
-        {showMap && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 h-96 relative"
-          >
-            <div ref={mapRef} className="w-full h-full rounded-lg" />
-            {coordinates && (
-              <div className="absolute top-4 left-4 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                <p className="text-sm font-medium text-gray-700">Your Location</p>
-                <p className="text-xs text-gray-500">Lat: {coordinates.lat.toFixed(4)}, Lng: {coordinates.lng.toFixed(4)}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
 
         {/* Doctors List */}
         <div className="space-y-4">
@@ -465,7 +406,7 @@ export default function DoctorsPage() {
           </motion.div>
         )}
 
-        {/* Disclaimer */}
+        {/* Info Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -473,12 +414,12 @@ export default function DoctorsPage() {
           className="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-6"
         >
           <h3 className="text-lg font-semibold text-blue-800 mb-2">
-            Note about Doctor Search
+            Find Real Hospitals & Medical Facilities
           </h3>
           <p className="text-blue-700 text-sm">
-            This is a demo feature showing mock doctor data. In a real implementation, 
-            this would integrate with healthcare provider APIs and real location services 
-            to show actual doctors in your area.
+            Click the &quot;Find Nearby Hospitals in Maps&quot; button above to open your device&apos;s maps app 
+            and search for actual hospitals, clinics, and medical facilities near your location. 
+            This will show you real-time information including directions, hours, and contact details.
           </p>
         </motion.div>
       </div>
@@ -527,7 +468,7 @@ const mockDoctors: Doctor[] = [
     specialty: 'Pediatrics',
     rating: 4.6,
     distance: '2.8 mi',
-    address: '321 Kids Lane, Children\'s Medical',
+    address: '321 Kids Lane, Childrens Medical',
     phone: '(555) 456-7890',
     hours: 'Mon-Fri: 8AM-6PM, Sat: 9AM-2PM',
     acceptingPatients: true
