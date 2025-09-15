@@ -6,12 +6,6 @@
       "use": "@vercel/next"
     }
   ],
-  "env": {
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "JWT_SECRET": "@jwt-secret",
-    "DATABASE_URL": "@database-url"
-  },
   "build": {
     "env": {
       "SKIP_ENV_VALIDATION": "1"
