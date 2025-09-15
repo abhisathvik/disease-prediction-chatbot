@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Specifies the datasource used by your application
+// The name "db" is the default identifier
+// The URL is read from the environment variable DATABASE_URL
+// This URL should start with "postgresql://", "mysql://", "sqlite://" or "sqlserver://"
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Specifies the language used for the generated client. This is the default.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Define User model
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  email         String      @unique
+  password      String
+  role          String      @default("USER")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  medicalHistory MedicalHistory[]
+  chatSessions  ChatSession[]
+  symptomLogs   SymptomLog[]
+}
+
+// Define MedicalHistory model
+model MedicalHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  condition String
+  diagnosisDate DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+// Define Disease model
+model Disease {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  symptoms    String[]
+  causes      String[]
+  precautions String[]
+  medications String[]
+  severity    Int
+  createdAt   DateTime    @default(now())
+}
+
+// Define ChatSession model
+model ChatSession {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  title     String
+  messages  ChatMessage[]
+  createdAt DateTime    @default(now())
+}
+
+// Define ChatMessage model
+model ChatMessage {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+  content   String
+  role      String
+  createdAt DateTime @default(now())
+}
+
+// Define Doctor model
+model Doctor {
+  id           String   @id @default(uuid())
+  name         String
+  specialty    String
+  rating       Float
+  distance     String
+  address      String
+  phone        String
+  hours        String
+  acceptingPatients Boolean
+  coordinates  Json?
+}
+
+// Define SymptomLog model for health monitoring
+model SymptomLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  symptoms  String   // JSON string of symptoms array
+  severity  Int       // 1-10 scale
+  duration  String    // e.g., "2 hours", "3 days"
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+}

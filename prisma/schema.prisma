@@ -1,0 +1,166 @@
+// Disease Prediction Chatbot Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  password    String
+  phone       String?
+  dateOfBirth DateTime?
+  address     String?
+  gender      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  medicalHistory MedicalHistory[]
+  chatSessions   ChatSession[]
+  predictions    DiseaseQuery[]
+  healthProfile  HealthProfile?
+  healthMetrics  HealthMetric[]
+  symptomLogs    SymptomLog[]
+  
+  @@map("users")
+}
+
+model MedicalHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  symptoms    String   // JSON string of symptoms
+  diagnosis   String?
+  medications String?  // JSON string of medications
+  allergies   String?  // JSON string of allergies
+  conditions  String?  // JSON string of existing conditions
+  notes       String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("medical_history")
+}
+
+model DiseaseQuery {
+  id           String   @id @default(cuid())
+  userId       String
+  symptoms     String   // JSON array of 3 symptoms
+  predictions  String   // JSON array of top 3 predicted diseases
+  confidence   Float?
+  timestamp    DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("disease_queries")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id            String   @id @default(cuid())
+  sessionId     String
+  role          String   // 'user' | 'assistant' | 'system'
+  content       String
+  metadata      String?  // JSON string for additional data
+  timestamp     DateTime @default(now())
+  
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("chat_messages")
+}
+
+model Disease {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String?
+  symptoms     String   // JSON array of common symptoms
+  causes       String?  // JSON array of causes
+  precautions  String?  // JSON array of precautions
+  medicines    String?  // JSON array of medicines/treatments
+  severity     String   // 'low' | 'medium' | 'high' | 'critical'
+  category     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@map("diseases")
+}
+
+model HealthProfile {
+  id                            String   @id @default(cuid())
+  userId                        String   @unique
+  height                        String?
+  weight                        String?
+  bloodType                     String?
+  allergies                     String   @default("[]")
+  medications                   String   @default("[]")
+  emergencyContactName          String?
+  emergencyContactPhone         String?
+  emergencyContactRelationship  String?
+  medicalConditions             String   @default("[]")
+  preferredHospital             String?
+  insuranceProvider             String?
+  lastCheckup                   DateTime?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("health_profiles")
+}
+
+model HealthMetric {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // blood_pressure, heart_rate, temperature, weight, etc.
+  value     String
+  unit      String
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("health_metrics")
+}
+
+model SymptomLog {
+  id        String   @id @default(cuid())
+  userId    String
+  symptoms  String   // JSON array of symptoms
+  severity  Int      @default(5) // 1-10 scale
+  duration  String?
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("symptom_logs")
+}
