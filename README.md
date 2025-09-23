@@ -223,13 +223,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔗 Links
 
-- **Live Demo**: [Your deployed application URL]
+- **Live Demo**: https://disease-prediction-chatbot.vercel.app
 - **API Documentation**: Available in the `/api` routes
-- **Bug Reports**: [GitHub Issues](your-repo-url/issues)
+- **Bug Reports**: [GitHub Issues](https://github.com/abhisathvik/disease-prediction-chatbot/issues)
 
 ## 📞 Support
 
-For support, email [your-email] or open an issue on GitHub.
+For support, email abhisathvikreddy1738527@gmail.com or open an issue on GitHub.
 
 ---
 
