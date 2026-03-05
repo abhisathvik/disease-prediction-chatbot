@@ -33,51 +33,81 @@ export async function POST(request: NextRequest) {
     }
 
     let chatSession
+    let databaseAvailable = true
+
+    const handleDatabaseError = (context: string, error: unknown) => {
+      databaseAvailable = false
+      console.error(`Chat database error (${context}):`, error)
+    }
+
     if (sessionId) {
-      chatSession = await prisma.chatSession.findFirst({
-        where: {
-          id: sessionId,
-          userId: user.id
-        },
-        include: {
-          messages: {
-            orderBy: { timestamp: 'asc' },
-            take: 10
+      try {
+        chatSession = await prisma.chatSession.findFirst({
+          where: {
+            id: sessionId,
+            userId: user.id
+          },
+          include: {
+            messages: {
+              orderBy: { timestamp: 'asc' },
+              take: 10
+            }
           }
-        }
-      })
-    }
-
-    if (!chatSession) {
-      chatSession = await prisma.chatSession.create({
-        data: {
-          userId: user.id,
-          title: message.substring(0, 50) + (message.length > 50 ? '...' : '')
-        },
-        include: { messages: true }
-      })
-    }
-
-    await prisma.chatMessage.create({
-      data: {
-        sessionId: chatSession.id,
-        role: 'user',
-        content: message
+        })
+      } catch (error) {
+        handleDatabaseError('findSession', error)
       }
-    })
+    }
 
-    const [medicalHistory, recentPredictions] = await Promise.all([
-      prisma.medicalHistory.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-        take: 3
-      }),
-      prisma.diseaseQuery.findMany({
-        where: { userId: user.id },
-        orderBy: { timestamp: 'desc' },
-        take: 3
-      })
-    ])
+    if (!chatSession && databaseAvailable) {
+      try {
+        chatSession = await prisma.chatSession.create({
+          data: {
+            userId: user.id,
+            title: message.substring(0, 50) + (message.length > 50 ? '...' : '')
+          },
+          include: { messages: true }
+        })
+      } catch (error) {
+        handleDatabaseError('createSession', error)
+      }
+    }
+
+    if (chatSession && databaseAvailable) {
+      try {
+        await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSession.id,
+            role: 'user',
+            content: message
+          }
+        })
+      } catch (error) {
+        handleDatabaseError('saveUserMessage', error)
+      }
+    }
+
+    let medicalHistory: Awaited<ReturnType<typeof prisma.medicalHistory.findMany>> = []
+    let recentPredictions: Awaited<ReturnType<typeof prisma.diseaseQuery.findMany>> = []
+
+    if (databaseAvailable) {
+      try {
+        ;[medicalHistory, recentPredictions] = await Promise.all([
+          prisma.medicalHistory.findMany({
+            where: { userId: user.id },
+            orderBy: { createdAt: 'desc' },
+            take: 3
+          }),
+          prisma.diseaseQuery.findMany({
+            where: { userId: user.id },
+            orderBy: { timestamp: 'desc' },
+            take: 3
+          })
+        ])
+      } catch (error) {
+        handleDatabaseError('loadMedicalContext', error)
+      }
+    }
 
     const safeParse = (data: string | null) => {
       try {
@@ -95,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     const chatbot = new MedicalChatbot()
-    const conversationHistory = chatSession.messages.map(msg => ({
+    const conversationHistory = (chatSession?.messages || []).map(msg => ({
       role: msg.role as 'user' | 'assistant' | 'system',
       content: msg.content,
       timestamp: msg.timestamp
@@ -109,23 +139,35 @@ export async function POST(request: NextRequest) {
       aiResponse = "I apologize, but I'm having trouble responding right now. Please try again."
     }
 
-    const savedMessage = await prisma.chatMessage.create({
-      data: {
-        sessionId: chatSession.id,
-        role: 'assistant',
-        content: aiResponse
+    let savedMessageId = `fallback-${Date.now()}`
+    let savedMessageTimestamp = new Date()
+
+    if (chatSession && databaseAvailable) {
+      try {
+        const savedMessage = await prisma.chatMessage.create({
+          data: {
+            sessionId: chatSession.id,
+            role: 'assistant',
+            content: aiResponse
+          }
+        })
+        savedMessageId = savedMessage.id
+        savedMessageTimestamp = savedMessage.timestamp
+      } catch (error) {
+        handleDatabaseError('saveAssistantMessage', error)
       }
-    })
+    }
 
     return NextResponse.json({
       success: true,
-      sessionId: chatSession.id,
+      sessionId: chatSession?.id ?? null,
       message: {
-        id: savedMessage.id,
+        id: savedMessageId,
         role: 'assistant',
         content: aiResponse,
-        timestamp: savedMessage.timestamp.toISOString()
-      }
+        timestamp: savedMessageTimestamp.toISOString()
+      },
+      warning: databaseAvailable ? undefined : 'Chat history is temporarily unavailable.'
     })
 
   } catch (error) {

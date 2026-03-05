@@ -10,9 +10,7 @@ import {
   User, 
   ArrowLeft, 
   MoreVertical,
-  RefreshCw,
-  Heart,
-  MessageCircle
+  RefreshCw
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -76,7 +74,7 @@ export default function ChatPage() {
     setIsTyping(true)
 
     try {
-      const response = await fetch('/api/chat/', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +172,7 @@ export default function ChatPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <AnimatePresence>
-                {messages.map((message, index) => (
+                {messages.map((message) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 20 }}
