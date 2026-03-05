@@ -76,7 +76,7 @@ export default function ChatPage() {
     setIsTyping(true)
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,8 +198,8 @@ export default function ChatPage() {
                       </div>
                       <div className={`rounded-2xl px-4 py-3 ${
                         message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white'
+                          : 'bg-white text-gray-900 border border-gray-200'
                       }`}>
                         <div 
                           className="text-sm leading-relaxed"

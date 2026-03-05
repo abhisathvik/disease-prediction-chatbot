@@ -30,7 +30,7 @@ export class MedicalChatbot {
 
   if (this.isConfigured) {
     this.model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash'
+      model: 'gemini-1.5-flash'
     })
   }
 }

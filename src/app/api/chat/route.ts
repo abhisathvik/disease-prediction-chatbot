@@ -5,7 +5,6 @@ import prisma from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
     const authHeader = request.headers.get('authorization')
     const token = extractTokenFromHeader(authHeader)
 
@@ -33,7 +32,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create chat session
     let chatSession
     if (sessionId) {
       chatSession = await prisma.chatSession.findFirst({
@@ -43,10 +41,8 @@ export async function POST(request: NextRequest) {
         },
         include: {
           messages: {
-            orderBy: {
-              timestamp: 'asc'
-            },
-            take: 10 // Last 10 messages for context
+            orderBy: { timestamp: 'asc' },
+            take: 10
           }
         }
       })
@@ -58,13 +54,10 @@ export async function POST(request: NextRequest) {
           userId: user.id,
           title: message.substring(0, 50) + (message.length > 50 ? '...' : '')
         },
-        include: {
-          messages: true
-        }
+        include: { messages: true }
       })
     }
 
-    // Save user message
     await prisma.chatMessage.create({
       data: {
         sessionId: chatSession.id,
@@ -73,7 +66,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Get user's medical context
     const [medicalHistory, recentPredictions] = await Promise.all([
       prisma.medicalHistory.findMany({
         where: { userId: user.id },
@@ -87,15 +79,21 @@ export async function POST(request: NextRequest) {
       })
     ])
 
-    // Prepare medical context
-    const medicalContext = {
-      userMedicalHistory: medicalHistory,
-      recentPredictions: recentPredictions.map(p => JSON.parse(p.predictions)).flat(),
-      allergies: medicalHistory.flatMap(h => h.allergies ? JSON.parse(h.allergies) : []),
-      currentMedications: medicalHistory.flatMap(h => h.medications ? JSON.parse(h.medications) : [])
+    const safeParse = (data: string | null) => {
+      try {
+        return data ? JSON.parse(data) : []
+      } catch {
+        return []
+      }
     }
 
-    // Generate AI response
+    const medicalContext = {
+      userMedicalHistory: medicalHistory,
+      recentPredictions: recentPredictions.map(p => safeParse(p.predictions)).flat(),
+      allergies: medicalHistory.flatMap(h => safeParse(h.allergies)),
+      currentMedications: medicalHistory.flatMap(h => safeParse(h.medications))
+    }
+
     const chatbot = new MedicalChatbot()
     const conversationHistory = chatSession.messages.map(msg => ({
       role: msg.role as 'user' | 'assistant' | 'system',
@@ -103,13 +101,14 @@ export async function POST(request: NextRequest) {
       timestamp: msg.timestamp
     }))
 
-    const aiResponse = await chatbot.generateResponse(
-      message,
-      conversationHistory,
-      medicalContext
-    )
+    let aiResponse = "I'm sorry, I couldn't process your request."
+    try {
+      aiResponse = await chatbot.generateResponse(message, conversationHistory, medicalContext)
+    } catch (err) {
+      console.error("Gemini error:", err)
+      aiResponse = "I apologize, but I'm having trouble responding right now. Please try again."
+    }
 
-    // Save AI response
     const savedMessage = await prisma.chatMessage.create({
       data: {
         sessionId: chatSession.id,
@@ -125,7 +124,7 @@ export async function POST(request: NextRequest) {
         id: savedMessage.id,
         role: 'assistant',
         content: aiResponse,
-        timestamp: savedMessage.timestamp
+        timestamp: savedMessage.timestamp.toISOString()
       }
     })
 
